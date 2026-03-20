@@ -22,10 +22,18 @@ public class FurnitureTurn : MonoBehaviour
     [Header("家具の向き")]
     [SerializeField] private FurnitureDirection direction = FurnitureDirection.Up;
 
+    [Header("見た目回転")]
+    [SerializeField] private float visualRotationOffsetZ;
+
     [Header("家具の基準マス座標")]
     [SerializeField] private Vector2Int gridPosition;
 
     private StageGrid cachedStageGrid;
+
+    private void Awake()
+    {
+        ApplyVisualRotation();
+    }
 
     public FurnitureType Type => furnitureType;
     public FurnitureDirection Direction => direction;
@@ -164,21 +172,25 @@ public class FurnitureTurn : MonoBehaviour
 
     private void ApplyVisualRotation()
     {
+        float zRotation = visualRotationOffsetZ;
+
         switch (direction)
         {
             case FurnitureDirection.Up:
-                transform.rotation = Quaternion.Euler(0f, 0f, 0f);
+                zRotation += 0f;
                 break;
             case FurnitureDirection.Right:
-                transform.rotation = Quaternion.Euler(0f, 90f, 0f);
+                zRotation += -90f;
                 break;
             case FurnitureDirection.Down:
-                transform.rotation = Quaternion.Euler(0f, 180f, 0f);
+                zRotation += 180f;
                 break;
             case FurnitureDirection.Left:
-                transform.rotation = Quaternion.Euler(0f, 270f, 0f);
+                zRotation += 90f;
                 break;
         }
+
+        transform.rotation = Quaternion.Euler(0f, 0f, zRotation);
     }
 
     private void OnDestroy()

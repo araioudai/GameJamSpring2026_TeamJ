@@ -6,9 +6,6 @@ public class StageGrid : MonoBehaviour
     [SerializeField] private int width = 10;
     [SerializeField] private int height = 10;
 
-    // 0 = 床
-    // 1 = 壁
-    // 2 = ゴール
     private int[,] mapData;
 
     private readonly List<FurnitureTurn> furnitureList = new List<FurnitureTurn>();
