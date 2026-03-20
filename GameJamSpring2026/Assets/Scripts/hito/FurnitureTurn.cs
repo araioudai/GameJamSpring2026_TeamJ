@@ -25,6 +25,8 @@ public class FurnitureTurn : MonoBehaviour
     [Header("家具の基準マス座標")]
     [SerializeField] private Vector2Int gridPosition;
 
+    private StageGrid cachedStageGrid;
+
     public FurnitureType Type => furnitureType;
     public FurnitureDirection Direction => direction;
     public Vector2Int GridPosition => gridPosition;
@@ -43,6 +45,11 @@ public class FurnitureTurn : MonoBehaviour
     {
         direction = dir;
         ApplyVisualRotation();
+    }
+
+    public void SetStageGrid(StageGrid stageGrid)
+    {
+        cachedStageGrid = stageGrid;
     }
 
     public Vector2Int[] GetOccupiedCells()
@@ -171,6 +178,14 @@ public class FurnitureTurn : MonoBehaviour
             case FurnitureDirection.Left:
                 transform.rotation = Quaternion.Euler(0f, 270f, 0f);
                 break;
+        }
+    }
+
+    private void OnDestroy()
+    {
+        if (cachedStageGrid != null)
+        {
+            cachedStageGrid.UnregisterFurniture(this);
         }
     }
 }
