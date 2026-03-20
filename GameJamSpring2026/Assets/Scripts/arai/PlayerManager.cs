@@ -6,9 +6,15 @@ using UnityEngine.InputSystem;
 
 public class PlayerManager : MonoBehaviour
 {
-    #region 定数
-    //プレイヤーサウンド状態用定数
-    private const int JUMP = 0;
+    #region 列挙対
+    //向き
+    enum Direction
+    {
+        Down, 
+        Up, 
+        Right, 
+        Left
+    }
     #endregion
 
     #region private変数
@@ -23,9 +29,55 @@ public class PlayerManager : MonoBehaviour
     Rigidbody2D rb;                                     //Rigidbody2D 物理挙動用
     Animator animator;                                  //アニメーション用
     PlayerAction controls;                              //InputSystem用
+    InputAction pressAction;                            //押した時
+    InputAction positionAction;                         //移動アクション
+
     Vector2 moveInput;                                  //最終的な移動入力値
     Vector2 startTouchPos;                              //タッチを開始した座標
     bool isUsingVirtual;                                //バーチャルパッド使用中フラグ
+
+    #endregion
+
+    #region Set関数
+
+    /// <summary>
+    /// 進んでいる方向の座標をセット処理
+    /// </summary>
+    /// <param name="x">x座標</param>
+    /// <param name="y">y座標</param>
+    void SetCoordinate(float x, float y)
+    {
+        animator.SetFloat("x", x);
+        animator.SetFloat("y", y);
+    }
+
+    /// <summary>
+    /// 移動状態フラグセット処理
+    /// </summary>
+    /// <param name="move">移動状態</param>
+    void SetIsMove(bool move)
+    {
+        animator.SetBool("isMove", move);
+    }
+
+    /// <summary>
+    /// 移動が縦か横かの処理
+    /// </summary>
+    /// <param name="height">縦かどうか</param>
+    void SetHeight(bool height)
+    {
+        animator.SetBool("height", height);
+    }
+
+    /// <summary>
+    /// 向きをセットする処理
+    /// </summary>
+    /// <param name="value">向き</param>
+    void SetDirection(int value)
+    {
+        animator.SetInteger("stats", value);
+    }
+
     #endregion
 
     #region Unityイベント
@@ -46,13 +98,18 @@ public class PlayerManager : MonoBehaviour
         controls.Player.Enable();
 
         //イベント登録もここで行う
-        controls.Player.Virtual.started += OnStartTouch;
-        controls.Player.Virtual.performed += OnMovePerformed;
-        controls.Player.Virtual.canceled += OnCanceledTouch;
+        pressAction = controls.Player.VirtualPress;
+        positionAction = controls.Player.VirtualPosition;
+
+        pressAction.started += OnStartTouch;
+        pressAction.canceled += OnCanceledTouch;
     }
 
     void Update()
     {
+        //バーチャルスティック操作中
+        VirtualControl();
+
         //移動処理の呼び出し
         Move();
     }
@@ -70,6 +127,23 @@ public class PlayerManager : MonoBehaviour
     #endregion
 
     #region Update呼び出し関数
+
+    #region バーチャルパッド制御
+    void VirtualControl()
+    {
+        //バーチャルスティック操作中
+        if (isUsingVirtual)
+        {
+            Vector2 currentPos = positionAction.ReadValue<Vector2>();
+            Vector2 diff = currentPos - startTouchPos;
+
+            Vector2 clampedDiff = Vector2.ClampMagnitude(diff, stickRadius);
+            stickHandle.anchoredPosition = clampedDiff;
+
+            moveInput = clampedDiff / stickRadius;
+        }
+    }
+    #endregion
 
     #region 移動
     /// <summary>
@@ -101,15 +175,46 @@ public class PlayerManager : MonoBehaviour
         //軸を固定したベクトルで移動計算
         var move = new Vector3(snapInput.x, snapInput.y, 0).normalized * speed * Time.deltaTime;
 
-        //向きの制御（localScaleのXを入れ替えて反転）
-        if (snapInput.x > 0)
+        //向きの制御
+        /*        if (snapInput.x > 0)
+                {
+                    transform.localScale = new Vector3(1f, 1f, 1f);
+                }
+                else if (snapInput.x < 0)
+                {
+                    transform.localScale = new Vector3(-1f, 1f, 1f);
+                }*/
+        //右
+        if (snapInput.x > 0 && snapInput.y == 0)
         {
-            transform.localScale = new Vector3(1f, 1f, 1f);
+            SetHeight(false);
+            SetDirection((int)Direction.Right);
+            SetCoordinate(1, 0);
         }
-        else if (snapInput.x < 0)
+        //左
+        else if (snapInput.x < 0 && snapInput.y == 0)
         {
-            transform.localScale = new Vector3(-1f, 1f, 1f);
+            SetHeight(false);
+            SetDirection((int)Direction.Left);
+            SetCoordinate(-1, 0);
         }
+        //上
+        else if (snapInput.x == 0 && snapInput.y > 0)
+        {
+            SetHeight(true);
+            SetDirection((int)Direction.Up);
+            SetCoordinate(0, 1);
+        }
+        //下
+        else
+        {
+            SetHeight(true);
+            SetDirection((int)Direction.Down);
+            SetCoordinate(0, -1);
+        }
+
+        //移動中フラグをセット
+        SetIsMove(true);
 
         //移動実行
         transform.Translate(move);
@@ -150,8 +255,7 @@ public class PlayerManager : MonoBehaviour
     /// </summary>
     void OnStartTouch(InputAction.CallbackContext context)
     {
-        if (Pointer.current == null) return;
-        Vector2 touchPos = Pointer.current.position.ReadValue();
+        Vector2 touchPos = positionAction.ReadValue<Vector2>();
 
         //UI（ボタン等）の上なら無視する
         if (IsOverUI(touchPos)) return;
@@ -166,9 +270,9 @@ public class PlayerManager : MonoBehaviour
     /// </summary>
     void OnMovePerformed(InputAction.CallbackContext context)
     {
-        if (!isUsingVirtual || Pointer.current == null) return;
+        if (!isUsingVirtual) return;
 
-        Vector2 currentPos = Pointer.current.position.ReadValue();
+        Vector2 currentPos = positionAction.ReadValue<Vector2>();
         Vector2 diff = currentPos - startTouchPos;
 
         //スティックの見た目を半径内に制限
@@ -187,6 +291,7 @@ public class PlayerManager : MonoBehaviour
         isUsingVirtual = false;
         moveInput = Vector2.zero;
         SetupJoystick(Vector2.zero, false); //パッドを非表示
+        SetIsMove(false);
     }
 
     /// <summary>
@@ -213,9 +318,8 @@ public class PlayerManager : MonoBehaviour
         if(controls == null) { return; }
 
         //イベント解除
-        controls.Player.Virtual.started -= OnStartTouch;
-        controls.Player.Virtual.performed -= OnMovePerformed;
-        controls.Player.Virtual.canceled -= OnCanceledTouch;
+        pressAction.started -= OnStartTouch;
+        pressAction.canceled -= OnCanceledTouch;
 
         controls.Player.Disable();
     }
