@@ -31,6 +31,9 @@ public class StageLoader : MonoBehaviour
     [SerializeField, EnumIndex(typeof(StageObj))]
     private GameObject[] stageObj = new GameObject[(int)StageObj.MAX];
 
+    [Header("判定用グリッド")]
+    [SerializeField] private StageGrid stageGrid;
+
     private int stageIndex;
     #endregion
 
@@ -78,6 +81,17 @@ public class StageLoader : MonoBehaviour
         wallTilemap.ClearAllTiles();
 
         string[] lines = csvFile.text.Trim().Split('\n');
+        int[,] mapData = new int[lines.Length, lines[0].Trim().Split(',').Length];
+
+        if (stageGrid == null)
+        {
+            stageGrid = FindFirstObjectByType<StageGrid>();
+        }
+
+        if (stageGrid != null)
+        {
+            stageGrid.SetMapData(mapData);
+        }
 
         Camera cam = Camera.main;
         if (cam == null || !cam.orthographic) return;
@@ -107,6 +121,9 @@ public class StageLoader : MonoBehaviour
             {
                 if (int.TryParse(values[x], out int value))
                 {
+                    Vector2Int gridPos = new Vector2Int(x, y);
+                    mapData[y, x] = ConvertToMapCellValue(value);
+
                     //タイルの描画場所
                     Vector3Int cellPos = new Vector3Int(topLeftCell.x + x, topLeftCell.y - y, 0);
                     //タイルと同じ描画だとずれるからその分ずらす
@@ -129,7 +146,7 @@ public class StageLoader : MonoBehaviour
                             floorTilemap.SetTile(cellPos, floorTile); //床タイル
 
                             //セットされているなら指定オブジェクトを生成
-                            SpawnStageObject(value, objPos);
+                            SpawnStageObject(value, objPos, gridPos);
 
                             break;
                     }
@@ -143,18 +160,52 @@ public class StageLoader : MonoBehaviour
     /// </summary>
     /// <param name="objIndex">生成するオブジェクト</param>
     /// <param name="position">生成する場所</param>
-    void SpawnStageObject(int objIndex, Vector3 position)
+    /// <param name="gridPos">CSV上のグリッド座標</param>
+    void SpawnStageObject(int objIndex, Vector3 position, Vector2Int gridPos)
     {
         //配列の範囲内かチェック
         //インスペクターで中身がセットされているかチェック
         if (objIndex >= 0 && objIndex < stageObj.Length && stageObj[objIndex] != null)
         {
-            Instantiate(stageObj[objIndex], position, Quaternion.identity);
+            GameObject spawnedObject = Instantiate(stageObj[objIndex], position, Quaternion.identity);
+
+            if (spawnedObject.TryGetComponent(out FurnitureTurn furnitureTurn))
+            {
+                InitializeFurniture(furnitureTurn, gridPos);
+            }
         }
         else
         {
             //セットされていない場合は何もしない
         }
+    }
+
+    int ConvertToMapCellValue(int value)
+    {
+        switch (value)
+        {
+            case (int)StageObj.WALL:
+                return 1;
+
+            case (int)StageObj.GOAL:
+                return 2;
+
+            default:
+                return 0;
+        }
+    }
+
+    void InitializeFurniture(FurnitureTurn furnitureTurn, Vector2Int gridPos)
+    {
+        furnitureTurn.SetGridPosition(gridPos);
+
+        if (stageGrid == null)
+        {
+            return;
+        }
+
+        furnitureTurn.SetStageGrid(stageGrid);
+        stageGrid.RegisterFurniture(furnitureTurn);
     }
     #endregion
 
