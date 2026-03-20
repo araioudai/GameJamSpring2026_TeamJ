@@ -18,14 +18,12 @@ public class PlayerManager : MonoBehaviour
     #endregion
 
     #region private変数
-    [Header("バーチャルスティック参照")]
-    [SerializeField] private RectTransform stickRoot;   //スティックの親（背景）
-    [SerializeField] private RectTransform stickHandle; //スティックの子（動く丸）
-
     [Header("設定")]
     [SerializeField] private float speed = 5f;          //プレイヤーの移動スピード
     [SerializeField] private float stickRadius = 60f;   //スティックが動ける範囲（半径）
 
+    RectTransform stickRoot;                            //スティックの親（背景）
+    RectTransform stickHandle;                          //スティックの子（動く丸）
     Rigidbody2D rb;                                     //Rigidbody2D 物理挙動用
     Animator animator;                                  //アニメーション用
     PlayerAction controls;                              //InputSystem用
@@ -118,8 +116,10 @@ public class PlayerManager : MonoBehaviour
     #region Start呼び出し関数
     void Init()
     {
-        rb = GetComponent<Rigidbody2D>();    //Rigidbody2D取得
-        animator = GetComponent<Animator>(); //Animator取得
+        stickRoot = GameObject.Find("StickBack").GetComponent<RectTransform>();           //スティックの背景
+        stickHandle = stickRoot.GetChild(0).gameObject.GetComponent<RectTransform>();     //スティック
+        rb = GetComponent<Rigidbody2D>();                                                 //Rigidbody2D取得
+        animator = GetComponent<Animator>();                                              //Animator取得
 
         //初期状態ではスティックを隠す
         if (stickRoot != null) stickRoot.gameObject.SetActive(false);
