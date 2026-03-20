@@ -102,9 +102,27 @@ public partial class @PlayerAction: IInputActionCollection2, IDisposable
                     ""initialStateCheck"": true
                 },
                 {
-                    ""name"": ""Virtual"",
+                    ""name"": ""VirtualPress"",
                     ""type"": ""Button"",
                     ""id"": ""7817cfa9-9b50-41f1-8c1b-a4a6de81db87"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""VirtualPosition"",
+                    ""type"": ""Value"",
+                    ""id"": ""c62056f3-d3b5-4657-b382-48211bc50708"",
+                    ""expectedControlType"": ""Vector2"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": true
+                },
+                {
+                    ""name"": ""Grab"",
+                    ""type"": ""Button"",
+                    ""id"": ""f067b61f-7227-4cd4-8a5a-59756f3b2ee6"",
                     ""expectedControlType"": """",
                     ""processors"": """",
                     ""interactions"": """",
@@ -223,79 +241,35 @@ public partial class @PlayerAction: IInputActionCollection2, IDisposable
                     ""isPartOfComposite"": true
                 },
                 {
-                    ""name"": ""2D Vector"",
-                    ""id"": ""4a8e908c-fa0f-4a88-8e10-c853f7ceb052"",
-                    ""path"": ""2DVector"",
-                    ""interactions"": """",
-                    ""processors"": """",
-                    ""groups"": """",
-                    ""action"": ""Move"",
-                    ""isComposite"": true,
-                    ""isPartOfComposite"": false
-                },
-                {
-                    ""name"": ""up"",
-                    ""id"": ""4794bfd9-49c3-40c5-9c48-75ed3e1d13ef"",
-                    ""path"": ""<Gamepad>/leftStick/up"",
-                    ""interactions"": """",
-                    ""processors"": """",
-                    ""groups"": """",
-                    ""action"": ""Move"",
-                    ""isComposite"": false,
-                    ""isPartOfComposite"": true
-                },
-                {
-                    ""name"": ""down"",
-                    ""id"": ""39d4e434-ca4b-48ac-aeb9-71d3f46a782e"",
-                    ""path"": ""<Gamepad>/leftStick/down"",
-                    ""interactions"": """",
-                    ""processors"": """",
-                    ""groups"": """",
-                    ""action"": ""Move"",
-                    ""isComposite"": false,
-                    ""isPartOfComposite"": true
-                },
-                {
-                    ""name"": ""left"",
-                    ""id"": ""a83d95ea-16c9-487b-afb1-c2e02a57c5f7"",
-                    ""path"": ""<Gamepad>/leftStick/left"",
-                    ""interactions"": """",
-                    ""processors"": """",
-                    ""groups"": """",
-                    ""action"": ""Move"",
-                    ""isComposite"": false,
-                    ""isPartOfComposite"": true
-                },
-                {
-                    ""name"": ""right"",
-                    ""id"": ""f121e53f-81ab-47d4-b792-e85fd33259dc"",
-                    ""path"": ""<Gamepad>/leftStick/right"",
-                    ""interactions"": """",
-                    ""processors"": """",
-                    ""groups"": """",
-                    ""action"": ""Move"",
-                    ""isComposite"": false,
-                    ""isPartOfComposite"": true
-                },
-                {
                     ""name"": """",
-                    ""id"": ""e0069178-55dc-43e6-9819-d4ade3477981"",
+                    ""id"": ""cca9f9d2-a673-4992-926f-7689034b5eea"",
                     ""path"": ""<Mouse>/leftButton"",
                     ""interactions"": """",
                     ""processors"": """",
                     ""groups"": """",
-                    ""action"": ""Virtual"",
+                    ""action"": ""VirtualPress"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
                 },
                 {
                     ""name"": """",
-                    ""id"": ""f83a91df-7e05-4bcf-bd71-eeeba9b0a1f7"",
-                    ""path"": ""<Touchscreen>/Press"",
+                    ""id"": ""2784f088-7e72-4a54-a05b-1265756205ad"",
+                    ""path"": ""<Pointer>/position"",
                     ""interactions"": """",
                     ""processors"": """",
                     ""groups"": """",
-                    ""action"": ""Virtual"",
+                    ""action"": ""VirtualPosition"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""88412ebd-e659-4c24-8d6d-e52098fc6560"",
+                    ""path"": ""<Keyboard>/e"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Grab"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
                 }
@@ -307,7 +281,9 @@ public partial class @PlayerAction: IInputActionCollection2, IDisposable
         // Player
         m_Player = asset.FindActionMap("Player", throwIfNotFound: true);
         m_Player_Move = m_Player.FindAction("Move", throwIfNotFound: true);
-        m_Player_Virtual = m_Player.FindAction("Virtual", throwIfNotFound: true);
+        m_Player_VirtualPress = m_Player.FindAction("VirtualPress", throwIfNotFound: true);
+        m_Player_VirtualPosition = m_Player.FindAction("VirtualPosition", throwIfNotFound: true);
+        m_Player_Grab = m_Player.FindAction("Grab", throwIfNotFound: true);
     }
 
     ~@PlayerAction()
@@ -389,7 +365,9 @@ public partial class @PlayerAction: IInputActionCollection2, IDisposable
     private readonly InputActionMap m_Player;
     private List<IPlayerActions> m_PlayerActionsCallbackInterfaces = new List<IPlayerActions>();
     private readonly InputAction m_Player_Move;
-    private readonly InputAction m_Player_Virtual;
+    private readonly InputAction m_Player_VirtualPress;
+    private readonly InputAction m_Player_VirtualPosition;
+    private readonly InputAction m_Player_Grab;
     /// <summary>
     /// Provides access to input actions defined in input action map "Player".
     /// </summary>
@@ -406,9 +384,17 @@ public partial class @PlayerAction: IInputActionCollection2, IDisposable
         /// </summary>
         public InputAction @Move => m_Wrapper.m_Player_Move;
         /// <summary>
-        /// Provides access to the underlying input action "Player/Virtual".
+        /// Provides access to the underlying input action "Player/VirtualPress".
         /// </summary>
-        public InputAction @Virtual => m_Wrapper.m_Player_Virtual;
+        public InputAction @VirtualPress => m_Wrapper.m_Player_VirtualPress;
+        /// <summary>
+        /// Provides access to the underlying input action "Player/VirtualPosition".
+        /// </summary>
+        public InputAction @VirtualPosition => m_Wrapper.m_Player_VirtualPosition;
+        /// <summary>
+        /// Provides access to the underlying input action "Player/Grab".
+        /// </summary>
+        public InputAction @Grab => m_Wrapper.m_Player_Grab;
         /// <summary>
         /// Provides access to the underlying input action map instance.
         /// </summary>
@@ -438,9 +424,15 @@ public partial class @PlayerAction: IInputActionCollection2, IDisposable
             @Move.started += instance.OnMove;
             @Move.performed += instance.OnMove;
             @Move.canceled += instance.OnMove;
-            @Virtual.started += instance.OnVirtual;
-            @Virtual.performed += instance.OnVirtual;
-            @Virtual.canceled += instance.OnVirtual;
+            @VirtualPress.started += instance.OnVirtualPress;
+            @VirtualPress.performed += instance.OnVirtualPress;
+            @VirtualPress.canceled += instance.OnVirtualPress;
+            @VirtualPosition.started += instance.OnVirtualPosition;
+            @VirtualPosition.performed += instance.OnVirtualPosition;
+            @VirtualPosition.canceled += instance.OnVirtualPosition;
+            @Grab.started += instance.OnGrab;
+            @Grab.performed += instance.OnGrab;
+            @Grab.canceled += instance.OnGrab;
         }
 
         /// <summary>
@@ -455,9 +447,15 @@ public partial class @PlayerAction: IInputActionCollection2, IDisposable
             @Move.started -= instance.OnMove;
             @Move.performed -= instance.OnMove;
             @Move.canceled -= instance.OnMove;
-            @Virtual.started -= instance.OnVirtual;
-            @Virtual.performed -= instance.OnVirtual;
-            @Virtual.canceled -= instance.OnVirtual;
+            @VirtualPress.started -= instance.OnVirtualPress;
+            @VirtualPress.performed -= instance.OnVirtualPress;
+            @VirtualPress.canceled -= instance.OnVirtualPress;
+            @VirtualPosition.started -= instance.OnVirtualPosition;
+            @VirtualPosition.performed -= instance.OnVirtualPosition;
+            @VirtualPosition.canceled -= instance.OnVirtualPosition;
+            @Grab.started -= instance.OnGrab;
+            @Grab.performed -= instance.OnGrab;
+            @Grab.canceled -= instance.OnGrab;
         }
 
         /// <summary>
@@ -506,11 +504,25 @@ public partial class @PlayerAction: IInputActionCollection2, IDisposable
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
         void OnMove(InputAction.CallbackContext context);
         /// <summary>
-        /// Method invoked when associated input action "Virtual" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// Method invoked when associated input action "VirtualPress" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
         /// </summary>
         /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
-        void OnVirtual(InputAction.CallbackContext context);
+        void OnVirtualPress(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "VirtualPosition" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnVirtualPosition(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "Grab" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnGrab(InputAction.CallbackContext context);
     }
 }
