@@ -1,3 +1,4 @@
+using TMPro;
 using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.Tilemaps;
@@ -14,7 +15,7 @@ public class StageLoader : MonoBehaviour
         CARDBOARD, //段ボール
         SOFA,      //ソファー
         BED,       //ベッド
-
+        Shelf,     //棚
 
         MAX        //最大数
     }
@@ -22,11 +23,13 @@ public class StageLoader : MonoBehaviour
     #endregion
     #region private変数
     [Header("マップ関連")]
-    [SerializeField] private Tilemap floorTilemap; //地面用Tilemap
-    [SerializeField] private Tilemap wallTilemap;  //壁用Tilemap
-    [SerializeField] private TileBase floorTile;   //木床タイル
-    [SerializeField] private TileBase wallTile;    //石床タイル
+    [SerializeField] private Tilemap floorTilemap;  //地面用Tilemap
+    [SerializeField] private Tilemap wallTilemap;   //壁用Tilemap
+    [SerializeField] private TileBase floorTile;    //床タイル
+    [SerializeField] private TileBase wallTile;     //壁タイル
 
+    [Header("生成オブジェクトの親")]
+    [SerializeField] private Transform actorParent; //生成オブジェクトをいれる
     [Header("生成オブジェクト")]
     [SerializeField, EnumIndex(typeof(StageObj))]
     private GameObject[] stageObj = new GameObject[(int)StageObj.MAX];
@@ -34,7 +37,8 @@ public class StageLoader : MonoBehaviour
     [Header("判定用グリッド")]
     [SerializeField] private StageGrid stageGrid;
 
-    private int stageIndex;
+    private int stageIndex; //ステージ番号
+    private int objIndex;   //オブジェクト数
     #endregion
 
     #region public変数
@@ -57,9 +61,11 @@ public class StageLoader : MonoBehaviour
     #region 初期化
     void Init()
     {
-        stageIndex = 1/*StageIndex.Instance.GetIndex()*/;
+        stageIndex = StageIndex.Instance.GetIndex();
         csvFileName = "CSV/Stage" + stageIndex;
         LoadMapFromCSV(csvFileName);
+
+        GameManager.Instance.SetObjIndex(objIndex);
     }
     #endregion
 
@@ -142,11 +148,18 @@ public class StageLoader : MonoBehaviour
                         case (int)StageObj.CARDBOARD:
                         case (int)StageObj.SOFA:
                         case (int)StageObj.BED:
+                        case (int)StageObj.Shelf:
                             //最初に床を置く
                             floorTilemap.SetTile(cellPos, floorTile); //床タイル
 
                             //セットされているなら指定オブジェクトを生成
                             SpawnStageObject(value, objPos, gridPos);
+
+                            //家具オブジェクト数カウント
+                            if(value != (int)StageObj.GOAL && value != (int)StageObj.PLAYER)
+                            {
+                                objIndex += 1;
+                            }
 
                             break;
                     }
@@ -167,7 +180,7 @@ public class StageLoader : MonoBehaviour
         //インスペクターで中身がセットされているかチェック
         if (objIndex >= 0 && objIndex < stageObj.Length && stageObj[objIndex] != null)
         {
-            GameObject spawnedObject = Instantiate(stageObj[objIndex], position, Quaternion.identity);
+            GameObject spawnedObject = Instantiate(stageObj[objIndex], position, Quaternion.identity, actorParent);
 
             if (spawnedObject.TryGetComponent(out FurnitureTurn furnitureTurn))
             {

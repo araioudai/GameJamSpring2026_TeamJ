@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 
@@ -21,6 +22,15 @@ public class PlayerManager : MonoBehaviour
     [Header("設定")]
     [SerializeField] private float speed = 5f;          //プレイヤーの移動スピード
     [SerializeField] private float stickRadius = 60f;   //スティックが動ける範囲（半径）
+    [Header("掴む設定")]
+    [SerializeField] private Transform holdPoint;       //掴む場所
+    private GameObject grabbedObject = null;            //今掴んでいる家具
+    [Header("家具との当たり判定用")]
+    [SerializeField] private LayerMask furnitureLayer;  //家具当たり判定用のレイヤー
+    [Header("設置不可の判定用")]
+    [SerializeField] private LayerMask obstacleLayer;   //壁(Wall)や他の家具(Furniture)を含める
+    [Header("ゴール判定用")]
+    [SerializeField] private LayerMask goalLayer;       //ゴール判定用のレイヤー
 
     RectTransform stickRoot;                            //スティックの親（背景）
     RectTransform stickHandle;                          //スティックの子（動く丸）
@@ -29,9 +39,12 @@ public class PlayerManager : MonoBehaviour
     PlayerAction controls;                              //InputSystem用
     InputAction pressAction;                            //押した時
     InputAction positionAction;                         //移動アクション
+    Button grabButton;                                  //掴む用ボタン
+    Text gradText;                                      //掴む離す切り替え用テキスト
 
     Vector2 moveInput;                                  //最終的な移動入力値
     Vector2 startTouchPos;                              //タッチを開始した座標
+    Vector2 moveDirection = Vector2.down;               //初期は下向き
     bool isUsingVirtual;                                //バーチャルパッド使用中フラグ
 
     #endregion
@@ -101,10 +114,13 @@ public class PlayerManager : MonoBehaviour
 
         pressAction.started += OnStartTouch;
         pressAction.canceled += OnCanceledTouch;
+        controls.Player.Grab.started += OnGrad;
     }
 
     void Update()
     {
+        if (!GameManager.Instance.GetIsStart()) { return; }
+
         //バーチャルスティック操作中
         VirtualControl();
 
@@ -118,11 +134,22 @@ public class PlayerManager : MonoBehaviour
     {
         stickRoot = GameObject.Find("StickBack").GetComponent<RectTransform>();           //スティックの背景
         stickHandle = stickRoot.GetChild(0).gameObject.GetComponent<RectTransform>();     //スティック
+        grabButton = GameObject.Find("ButtonFurniture").GetComponent<Button>();           //ボタン取得
+        gradText = GameObject.Find("TextFurniture").GetComponent<Text>();                 //テキスト取得
         rb = GetComponent<Rigidbody2D>();                                                 //Rigidbody2D取得
         animator = GetComponent<Animator>();                                              //Animator取得
 
+        gradText.text = "掴む";
+
         //初期状態ではスティックを隠す
         if (stickRoot != null) stickRoot.gameObject.SetActive(false);
+
+        //ボタンが設定されていれば、クリックイベントを登録
+        if (grabButton != null)
+        {
+            //ボタンが押された時にPushGrabを実行するように予約
+            grabButton.onClick.AddListener(PushGrab);
+        }
     }
     #endregion
 
@@ -158,7 +185,15 @@ public class PlayerManager : MonoBehaviour
         }
 
         //入力が極端に小さい場合は無視
-        if (moveInput.magnitude < 0.1f) return;
+        if (moveInput.magnitude < 0.1f) 
+        {
+            SetIsMove(false);
+
+            //止まっているときは速度を0にする
+            rb.linearVelocity = Vector2.zero;
+
+            return; 
+        }
 
         Vector2 snapInput = moveInput;
 
@@ -173,7 +208,7 @@ public class PlayerManager : MonoBehaviour
         }
 
         //軸を固定したベクトルで移動計算
-        var move = new Vector3(snapInput.x, snapInput.y, 0).normalized * speed * Time.deltaTime;
+        //var move = new Vector3(snapInput.x, snapInput.y, 0).normalized * speed * Time.deltaTime;
 
         //向きの制御
         /*        if (snapInput.x > 0)
@@ -184,9 +219,32 @@ public class PlayerManager : MonoBehaviour
                 {
                     transform.localScale = new Vector3(-1f, 1f, 1f);
                 }*/
+
+        //移動処理
+        Vector2 velocity = snapInput.normalized * speed;
+        rb.linearVelocity = velocity;
+
+        //移動中フラグをセット
+        SetIsMove(true);
+
+        //アニメーション変更
+        UpdateAnimator(snapInput);
+
+        //移動実行
+        //transform.Translate(move);
+    }
+
+    /// <summary>
+    /// プレイヤーのアニメーション更新
+    /// </summary>
+    /// <param name="snapInput"></param>
+    void UpdateAnimator(Vector2 snapInput)
+    {
         //右
         if (snapInput.x > 0 && snapInput.y == 0)
         {
+            moveDirection = Vector2.right;
+            holdPoint.localPosition = new Vector2(0.8f, 0);
             SetHeight(false);
             SetDirection((int)Direction.Right);
             SetCoordinate(1, 0);
@@ -194,6 +252,8 @@ public class PlayerManager : MonoBehaviour
         //左
         else if (snapInput.x < 0 && snapInput.y == 0)
         {
+            moveDirection = Vector2.left;
+            holdPoint.localPosition = new Vector2(-0.8f, 0);
             SetHeight(false);
             SetDirection((int)Direction.Left);
             SetCoordinate(-1, 0);
@@ -201,23 +261,21 @@ public class PlayerManager : MonoBehaviour
         //上
         else if (snapInput.x == 0 && snapInput.y > 0)
         {
+            moveDirection = Vector2.up;
+            holdPoint.localPosition = new Vector2(0, 0.8f);
             SetHeight(true);
             SetDirection((int)Direction.Up);
             SetCoordinate(0, 1);
         }
         //下
-        else
+        else if (snapInput.x == 0 && snapInput.y < 0)
         {
+            moveDirection = Vector2.down;
+            holdPoint.localPosition = new Vector2(0, -0.7f);
             SetHeight(true);
             SetDirection((int)Direction.Down);
             SetCoordinate(0, -1);
         }
-
-        //移動中フラグをセット
-        SetIsMove(true);
-
-        //移動実行
-        transform.Translate(move);
     }
     #endregion
 
@@ -268,7 +326,7 @@ public class PlayerManager : MonoBehaviour
     /// <summary>
     /// 押しながら動かしている時の処理（performedイベントに登録）
     /// </summary>
-    void OnMovePerformed(InputAction.CallbackContext context)
+/*    void OnMovePerformed(InputAction.CallbackContext context)
     {
         if (!isUsingVirtual) return;
 
@@ -281,7 +339,7 @@ public class PlayerManager : MonoBehaviour
 
         //入力値として正規化（0～1）してmoveInputに代入
         moveInput = clampedDiff / stickRadius;
-    }
+    }*/
 
     /// <summary>
     /// 離された時の処理（canceledイベントに登録）
@@ -313,6 +371,165 @@ public class PlayerManager : MonoBehaviour
     }
     #endregion
 
+    #region 掴む処理
+
+    void OnGrad(InputAction.CallbackContext context)
+    {
+        PushGrab();
+    }
+
+    /// <summary>
+    /// ボタンが押された時に前に家具があれば掴む
+    /// </summary>
+    public void PushGrab()
+    {
+        //すでに何か持っているなら離す
+        if (grabbedObject != null)
+        {
+            //離すのに成功した時だけテキストを変える
+            if (ReleaseFurniture())
+            {
+                gradText.text = "掴む";
+            }
+            return;
+        }
+
+        //前方に家具があるかチェック（Rayの距離設定）
+        float rayLength = 0.5f;
+        //始点をプレイヤーの中心から少し「向いている方向」にずらす
+        Vector2 origin = (Vector2)transform.position + (moveDirection * 0.2f);
+        //指定したレイヤーに対してのみ当たり判定を行う
+        RaycastHit2D hit = Physics2D.Raycast(origin, moveDirection, rayLength, furnitureLayer);
+
+        //家具に当たった場合
+        if (hit.collider != null)
+        {
+            //当たったゲームオブジェクトを引数に渡して掴む
+            GrabFurniture(hit.collider.gameObject);
+
+            if (gradText.text == "掴む")
+            {
+                gradText.text = "離す";
+            }
+        }
+    }
+
+    /// <summary>
+    /// 当たったゲームオブジェクトを引数に渡して掴む
+    /// </summary>
+    /// <param name="obj">オブジェクト</param>
+    private void GrabFurniture(GameObject obj)
+    {
+        //変数に掴んだオブジェクトを格納
+        grabbedObject = obj;
+
+        //物理演算（Rigidbody2D）の設定変更
+        if (grabbedObject.TryGetComponent<Rigidbody2D>(out Rigidbody2D objRb))
+        {
+            //bodyTypeをKinematicに変更（物理挙動を無効化し、スクリプト制御にする）
+            objRb.bodyType = RigidbodyType2D.Kinematic;
+            //当たり判定などは維持させる
+            objRb.simulated = true;
+        }
+
+        //プレイヤー側のHoldPointの子要素に設定
+        grabbedObject.transform.SetParent(holdPoint);
+
+        //HoldPointからの相対座標をゼロにして位置を合わせる
+        grabbedObject.transform.localPosition = Vector2.zero;
+    }
+
+    /// <summary>
+    /// 離す処理（置けたらtrue、置けなかったらfalseを返す）
+    /// </summary>
+    private bool ReleaseFurniture()
+    {
+        if (grabbedObject == null) return false;
+
+        //設置可能かチェック
+        Vector2 boxSize = Vector2.one * 0.8f;
+        if (grabbedObject.TryGetComponent<Collider2D>(out Collider2D col))
+        {
+            boxSize = col.bounds.size * 0.9f;
+        }
+
+        //範囲内のコライダーをすべて取得
+        Collider2D[] hits = Physics2D.OverlapBoxAll(holdPoint.position, boxSize, 0f, obstacleLayer);
+
+        bool isBlocked = false;
+        foreach (var hit in hits)
+        {
+            //もし当たったのが「今掴んでいる物」でも「プレイヤー自身」でもなければ、それは本当の障害物
+            if (hit.gameObject != grabbedObject && hit.gameObject != this.gameObject)
+            {
+                Debug.Log("ここには置けません！障害物: " + hit.name);
+                isBlocked = true;
+                break; //1つでも障害物があればループを抜ける
+            }
+        }
+
+        if (isBlocked)
+        {
+            return false; //置けない
+        }
+
+        Collider2D goalHit = Physics2D.OverlapBox(holdPoint.position, boxSize, 0f, goalLayer);
+        if (goalHit != null)
+        {
+            Debug.Log("ゴールに到達！オブジェクトを削除します: " + grabbedObject.name);
+
+            //UIを元に戻す
+            gradText.text = "掴む";
+
+            //掴んでいたオブジェクトを削除
+            Destroy(grabbedObject);
+
+            //ゲームマネージャのオブジェクト数を減らす
+            GameManager.Instance.SetObjMinus(1);
+
+            //参照をクリア
+            grabbedObject = null;
+
+            return true; //成功として終了
+        }
+
+        //離す処理
+        gradText.text = "掴む";
+        grabbedObject.transform.SetParent(null);
+
+        if (grabbedObject.TryGetComponent<Rigidbody2D>(out Rigidbody2D objRb))
+        {
+            objRb.bodyType = RigidbodyType2D.Dynamic;
+        }
+
+        grabbedObject = null;
+        return true;
+    }
+
+    #region 家具との当たり判定
+
+    /// <summary>
+    /// 向いている方向にRayを飛ばして家具との当たり判定を行う
+    /// </summary>
+    /// <returns></returns>
+    bool IsHitFurniture()
+    {
+        float rayLength = 0.5f;              //Rayの距離
+        Vector2 origin = transform.position; //Rayの始点
+
+        //向いている方向にRaycast（Layerに当たったらhit）
+        RaycastHit2D hit = Physics2D.Raycast(origin, moveDirection, rayLength, furnitureLayer);
+
+        //デバッグ用にRayを表示
+        Debug.DrawRay(origin, moveDirection * rayLength, Color.green);
+
+        return hit.collider != null;         //家具に当たったらtrue
+    }
+
+    #endregion
+
+    #endregion
+
     private void OnDisable()
     {
         if(controls == null) { return; }
@@ -320,6 +537,7 @@ public class PlayerManager : MonoBehaviour
         //イベント解除
         pressAction.started -= OnStartTouch;
         pressAction.canceled -= OnCanceledTouch;
+        controls.Player.Grab.started -= OnGrad;
 
         controls.Player.Disable();
     }
