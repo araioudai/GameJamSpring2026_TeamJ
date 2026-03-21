@@ -1,9 +1,9 @@
 using DG.Tweening;
-using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.UI;
 using System.Collections;
 using UnityEngine.Rendering;
+using UnityEngine.SceneManagement;
 
 public class GameManager : MonoBehaviour
 {
@@ -19,10 +19,16 @@ public class GameManager : MonoBehaviour
     [SerializeField] private GameObject canvasMask;
     [Header("カウントダウン用のテキスト")]
     [SerializeField] private Text countdownText;            //カウントダウン用テキスト
+    [Header("タイマー用テキスト")]
+    [SerializeField] private Text timerText;
+    [Header("ステージ事の残り秒数")]
+    [SerializeField] private float[] time = new float[3];
 
     private UIMaskFader fade;                               //フェード用スクリプト
     private bool isStart;                                   //ゲームがスタートしているかどうか
+    private bool sePlay;                                    //seを鳴らしたかどうか
     private bool gameClear;                                 //ゲームクリアフラグ
+    private bool gameOver;                                  //ゲームオーバーフラグ
     private int objIndex;                                   //ステージで生成したオブジェクト数
     private Vector2 initialCountdownPos;                    //カウントダウン用テキストの元の位置を保存する変数
     #endregion
@@ -93,8 +99,10 @@ public class GameManager : MonoBehaviour
     {
         if (!isStart) { return; }
 
+        CountTimer();
         GameJudge();
         GameClear();
+        GameOver();
     }
 
     #endregion
@@ -106,7 +114,9 @@ public class GameManager : MonoBehaviour
     {
         isStart = false;
         gameClear = false;
-        objIndex = 0;
+        gameOver = false;
+
+        timerText.text = time[StageIndex.Instance.GetIndex() - 1].ToString("F1");
 
         //最初に現在の位置（インスペクターで設定した中央など）を覚えておく
         if (countdownText != null)
@@ -192,14 +202,33 @@ public class GameManager : MonoBehaviour
     #endregion
 
     #region Update呼び出し関数
+    void CountTimer()
+    {
+        time[StageIndex.Instance.GetIndex() - 1] -= Time.deltaTime;
+
+        if(time[StageIndex.Instance.GetIndex() - 1] < 0)
+        {
+            time[StageIndex.Instance.GetIndex() - 1] = 0;
+        }
+
+        timerText.text = time[StageIndex.Instance.GetIndex() - 1].ToString("F1");
+    }
+
+
+
     /// <summary>
     /// ゲームクリア判定処理
     /// </summary>
     void GameJudge()
     {
-        if (objIndex < 0)
+        if (objIndex <= 0)
         {
             gameClear = true;
+        }
+
+        if (time[StageIndex.Instance.GetIndex() - 1] <= 0)
+        {
+            gameOver = true;
         }
     }
 
@@ -208,10 +237,92 @@ public class GameManager : MonoBehaviour
     /// </summary>
     void GameClear()
     {
-        if (gameClear) 
+        if (!gameClear) { return; }
+
+        ClearStatus.Instance.SetGameClear(true);
+        DrawGameStatus("GameClear");
+    }
+
+    /// <summary>
+    /// ゲームオーバー時の処理
+    /// </summary>
+    void GameOver()
+    {
+        if (!gameOver) { return; }
+
+        ClearStatus.Instance.SetGameClear(false);
+        DrawGameStatus("GameOver");
+    }
+
+    /// <summary>
+    /// ゲームオーバー表示
+    /// </summary>
+    private void DrawGameStatus(string status)
+    {
+        if (!sePlay)
         {
-            Debug.Log("くりあ");
+            sePlay = true;
+            Time.timeScale = 1f;
+
+            countdownText.gameObject.SetActive(true);
+
+            //はみ出し・改行の設定をコードで強制
+            countdownText.horizontalOverflow = HorizontalWrapMode.Overflow; //横にはみ出してもOK
+            countdownText.verticalOverflow = VerticalWrapMode.Overflow;     //縦にはみ出してもOK
+            countdownText.alignment = TextAnchor.MiddleCenter;              //中央揃え
+
+            countdownText.text = status;
+            countdownText.lineSpacing = 0.8f; //行間を少し詰める
+
+            countdownText.color = gameClear ? Color.yellow : Color.red;
+            countdownText.transform.localScale = Vector3.zero;
+
+            Sequence overSeq = DOTween.Sequence();
+
+            //スケールを1.2倍程度に抑える、パンチを効かせる
+            overSeq.Append(countdownText.transform.DOScale(1.2f, 0.4f).SetEase(Ease.OutBack))
+                   //激しい揺れ（DOShakeAnchorPos）
+                   .Join(countdownText.rectTransform.DOShakeAnchorPos(1.0f, 40f, 40))
+                   .AppendInterval(1.5f);
+
+            //テキストを表示してからフェードアウト（画面を閉じる）を開始
+            overSeq.OnComplete(() =>
+            {
+                // 1. フェードアウト（画面を閉じる）を開始
+                // 2. 第二引数のラムダ式は、アニメーション終了後に実行される
+                fade.PlayFadeOut(data.MaskSpeed(MaskData.MaskType.OUT), () =>
+                {
+                    //画面が閉じきったタイミングでシーン遷移を開始
+                    StartCoroutine(ResultLoad());
+                });
+            });
         }
     }
+
+    #region 少ししたらリザルトシーンへ
+    /// <summary>
+    /// 少し時間を空けてからリザルト
+    /// </summary>
+    IEnumerator ResultLoad()
+    {
+        if (Time.timeScale == 0f) { Time.timeScale = 1f; }
+        yield return new WaitForSeconds(1.5f); //音の分空ける
+        SceneManager.LoadScene("ResultScene");
+    }
+
     #endregion
+
+    #region ゲームシーンロード遅延用
+    /// <summary>
+    /// ゲームシーン読み込み遅延
+    /// </summary>
+    IEnumerator GameSceneLoad()
+    {
+        yield return new WaitForSeconds(0.5f);
+        SceneManager.LoadScene("GameScene");
+    }
+    #endregion
+
+    #endregion
+
 }

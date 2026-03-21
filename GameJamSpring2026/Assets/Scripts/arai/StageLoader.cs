@@ -51,7 +51,6 @@ public class StageLoader : MonoBehaviour
     void Start()
     {
         Init();
-        //Debug.Log(stageIndex);
     }
 
     #endregion

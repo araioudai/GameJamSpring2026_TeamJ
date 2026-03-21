@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
+using Unity.VisualScripting;
 
 public class PlayerManager : MonoBehaviour
 {
@@ -15,6 +16,14 @@ public class PlayerManager : MonoBehaviour
         Up, 
         Right, 
         Left
+    }
+
+    enum Action
+    {
+        GRAD,
+        LET,
+
+        MAX
     }
     #endregion
 
@@ -31,6 +40,9 @@ public class PlayerManager : MonoBehaviour
     [SerializeField] private LayerMask obstacleLayer;   //壁(Wall)や他の家具(Furniture)を含める
     [Header("ゴール判定用")]
     [SerializeField] private LayerMask goalLayer;       //ゴール判定用のレイヤー
+    [Header("掴む離す用")]
+    [SerializeField] private Sprite[] sprite = 
+        new Sprite[(int)Action.MAX];                    //掴む離す
 
     RectTransform stickRoot;                            //スティックの親（背景）
     RectTransform stickHandle;                          //スティックの子（動く丸）
@@ -40,7 +52,7 @@ public class PlayerManager : MonoBehaviour
     InputAction pressAction;                            //押した時
     InputAction positionAction;                         //移動アクション
     Button grabButton;                                  //掴む用ボタン
-    Text gradText;                                      //掴む離す切り替え用テキスト
+    Image grabImg;                                      //掴むと離すイメージ
 
     Vector2 moveInput;                                  //最終的な移動入力値
     Vector2 startTouchPos;                              //タッチを開始した座標
@@ -135,11 +147,12 @@ public class PlayerManager : MonoBehaviour
         stickRoot = GameObject.Find("StickBack").GetComponent<RectTransform>();           //スティックの背景
         stickHandle = stickRoot.GetChild(0).gameObject.GetComponent<RectTransform>();     //スティック
         grabButton = GameObject.Find("ButtonFurniture").GetComponent<Button>();           //ボタン取得
-        gradText = GameObject.Find("TextFurniture").GetComponent<Text>();                 //テキスト取得
+        grabImg = grabButton.GetComponent<Image>();                                       //ボタンのイメージ取得
+
         rb = GetComponent<Rigidbody2D>();                                                 //Rigidbody2D取得
         animator = GetComponent<Animator>();                                              //Animator取得
 
-        gradText.text = "掴む";
+        grabImg.sprite = sprite[(int)Action.GRAD];
 
         //初期状態ではスティックを隠す
         if (stickRoot != null) stickRoot.gameObject.SetActive(false);
@@ -233,6 +246,13 @@ public class PlayerManager : MonoBehaviour
         //移動実行
         //transform.Translate(move);
     }
+
+/*    IEnumerator SEMove()
+    {
+        yield return new WaitForSeconds(1f);
+
+        SoundManager.Instance.SePlay(0);
+    }*/
 
     /// <summary>
     /// プレイヤーのアニメーション更新
@@ -386,10 +406,11 @@ public class PlayerManager : MonoBehaviour
         //すでに何か持っているなら離す
         if (grabbedObject != null)
         {
-            //離すのに成功した時だけテキストを変える
+            //離すのに成功した時だけイメージを変える
             if (ReleaseFurniture())
             {
-                gradText.text = "掴む";
+                SoundManager.Instance.SePlay(2);
+                grabImg.sprite = sprite[(int)Action.GRAD];
             }
             return;
         }
@@ -407,9 +428,10 @@ public class PlayerManager : MonoBehaviour
             //当たったゲームオブジェクトを引数に渡して掴む
             GrabFurniture(hit.collider.gameObject);
 
-            if (gradText.text == "掴む")
+            if (grabImg.sprite == sprite[(int)Action.GRAD])
             {
-                gradText.text = "離す";
+                SoundManager.Instance.SePlay(1);
+                grabImg.sprite = sprite[(int)Action.LET];
             }
         }
     }
@@ -478,14 +500,16 @@ public class PlayerManager : MonoBehaviour
         {
             Debug.Log("ゴールに到達！オブジェクトを削除します: " + grabbedObject.name);
 
-            //UIを元に戻す
-            gradText.text = "掴む";
+            SoundManager.Instance.SePlay(2);
 
-            //掴んでいたオブジェクトを削除
-            Destroy(grabbedObject);
+            //UIを元に戻す
+            grabImg.sprite = sprite[(int)Action.GRAD];
 
             //ゲームマネージャのオブジェクト数を減らす
             GameManager.Instance.SetObjMinus(1);
+
+            //掴んでいたオブジェクトを削除
+            Destroy(grabbedObject);
 
             //参照をクリア
             grabbedObject = null;
@@ -494,7 +518,8 @@ public class PlayerManager : MonoBehaviour
         }
 
         //離す処理
-        gradText.text = "掴む";
+        SoundManager.Instance.SePlay(2);
+        grabImg.sprite = sprite[(int)Action.GRAD];
         grabbedObject.transform.SetParent(null);
 
         if (grabbedObject.TryGetComponent<Rigidbody2D>(out Rigidbody2D objRb))

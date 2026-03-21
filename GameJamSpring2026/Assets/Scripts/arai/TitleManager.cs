@@ -64,6 +64,8 @@ public class TitleManager : MonoBehaviour
     #region ƒ{ƒ^ƒ“‰Ÿ‰ºˆ—
     public void PushSelect()
     {
+        SoundManager.Instance.SePlay(0);
+
         titlePanel.SetActive(false);
         selectPanel.SetActive(true);
     }
@@ -93,6 +95,9 @@ public class TitleManager : MonoBehaviour
 
     public void GameStart()
     {
+        StageIndex.Instance.SetIsFirst(false);
+        SoundManager.Instance.SePlay(0);
+
         objctName = EventSystem.current.currentSelectedGameObject;
         string name = objctName.name;
 
