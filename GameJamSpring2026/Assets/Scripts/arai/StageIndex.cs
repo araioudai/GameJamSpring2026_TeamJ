@@ -31,6 +31,11 @@ public class StageIndex : MonoBehaviour
     /// <param name="index">ステージ番号</param>
     public void SetBeforeIndex(int index) { stageIndex -= index; if (stageIndex < 1) stageIndex = 14; }
 
+    /// <summary>
+    /// 最初のプレイ後セット
+    /// </summary>
+    /// <param name="first"></param>
+    public void SetIsFirst(bool first) { isFirst = first; }
     #endregion
 
     #region Get関数
