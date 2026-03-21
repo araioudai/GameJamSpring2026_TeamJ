@@ -8,31 +8,43 @@ public class StageIndex : MonoBehaviour
     #endregion
 
     #region private変数
-    private int stageIndex; //ステージ番号
-    private bool firstTime; //最初のプレイだったらチュートリアル
+    private int stageIndex;      //ステージ番号
+    private bool isFirst = true; //最初はフェード処理しないフラグ
     #endregion
 
     #region Set関数
-    //ステージ番号セット
+    /// <summary>
+    /// ステージ番号セット
+    /// </summary>
+    /// <param name="index">ステージ番号</param>
     public void SetIndex(int index) { stageIndex = index; }
 
-    //ステージ番号を次へ（ランキングパネルや次のステージへなど）
+    /// <summary>
+    /// ステージ番号を次へ（次のステージへなど）
+    /// </summary>
+    /// <param name="index">ステージ番号</param>
     public void SetNextIndex(int index) { stageIndex += index; if (stageIndex > 14) stageIndex = 1; }
 
-    //ステージ番号を前へ（ランキングパネルなど）
+    /// <summary>
+    /// ステージ番号を前へ
+    /// </summary>
+    /// <param name="index">ステージ番号</param>
     public void SetBeforeIndex(int index) { stageIndex -= index; if (stageIndex < 1) stageIndex = 14; }
 
-    //最初のプレイかどうかセット用
-    public void SetFirst(bool first) { firstTime = first; }
     #endregion
 
     #region Get関数
-    //ステージ番号入手用
+    /// <summary>
+    /// ステージ番号入手用
+    /// </summary>
+    /// <returns>ステージ番号</returns>
     public int GetIndex() { return stageIndex; }
 
-    //最初のプレイかどうか入手用
-    public bool GetFirst() {  return firstTime; }
-
+    /// <summary>
+    /// ゲーム開始時点かどうか
+    /// </summary>
+    /// <returns>最初</returns>
+    public bool GetIsFirst() { return isFirst; }
     #endregion
 
     #region Unityイベント関数
@@ -57,10 +69,6 @@ public class StageIndex : MonoBehaviour
     #region Start呼び出し関数
     void Init()
     {
-        if (SceneManager.GetActiveScene().name == "TitleScene")
-        {
-            firstTime = false;
-        }
     }
     #endregion
 }

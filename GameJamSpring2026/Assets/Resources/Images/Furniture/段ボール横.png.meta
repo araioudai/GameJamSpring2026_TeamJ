@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: 35df8d6237c76fd468e056e4d3be4776
+guid: 566a736c06d972740bb26d50c3495c7c
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: 1887995961147410354
-    second: "\u6BB5\u30DB\u3099\u30FC\u30EB_0"
+      213: 6666194622048053625
+    second: "\u6BB5\u30DB\u3099\u30FC\u30EB\u6A2A_0"
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -37,7 +37,7 @@ TextureImporter:
   maxTextureSize: 2048
   textureSettings:
     serializedVersion: 2
-    filterMode: 0
+    filterMode: 1
     aniso: 1
     mipBias: 0
     wrapU: 1
@@ -109,17 +109,30 @@ TextureImporter:
     ignorePlatformSupport: 0
     androidETC2FallbackOverride: 0
     forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: WebGL
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
   spriteSheet:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: "\u6BB5\u30DB\u3099\u30FC\u30EB_0"
+      name: "\u6BB5\u30DB\u3099\u30FC\u30EB\u6A2A_0"
       rect:
         serializedVersion: 2
-        x: 88
-        y: 230
-        width: 1859
-        height: 1534
+        x: 195
+        y: 114
+        width: 1644
+        height: 1772
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -128,8 +141,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 2b74099d252833a10800000000000000
-      internalID: 1887995961147410354
+      spriteID: 9792bc290b4138c50800000000000000
+      internalID: 6666194622048053625
       vertices: []
       indices: 
       edges: []
@@ -148,7 +161,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      "\u6BB5\u30DB\u3099\u30FC\u30EB_0": 1887995961147410354
+      "\u6BB5\u30DB\u3099\u30FC\u30EB\u6A2A_0": 6666194622048053625
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
